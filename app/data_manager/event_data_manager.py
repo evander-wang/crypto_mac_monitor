@@ -125,41 +125,48 @@ class EventDrivenDataManager:
     def get_ticker_data(self, symbol: str) -> Optional[ReturnTickerDTO]:
         return self.cache_manager.get_ticker_data(symbol)
 
-    def get_current_price(self, symbol: str) -> Optional[float]:
-        """获取当前价格"""
+    def _get_ticker_price_field(self, symbol: str, field: str, default: float = 0) -> Optional[float]:
+        """
+        从ticker数据中获取指定字段的值
+
+        Args:
+            symbol: 交易对符号
+            field: 字段名（如 'last', 'open24h'）
+            default: 默认值
+
+        Returns:
+            字段值或None
+        """
         ticker_data = self.get_ticker_data(symbol)
         if isinstance(ticker_data, ReturnTickerDTO):
-            return float(ticker_data.last)
+            value = getattr(ticker_data, field, None)
+            return float(value) if value is not None else None
         elif ticker_data:
-            # 兼容旧结构（理论上不会再走到这里）
             try:
-                return float(ticker_data.get("last", 0))  # type: ignore[attr-defined]
-            except Exception:
+                value = ticker_data.get(field, default)  # type: ignore[attr-defined]
+                return float(value) if value else None
+            except (ValueError, TypeError):
                 return None
         return None
 
+    def get_current_price(self, symbol: str) -> Optional[float]:
+        """获取当前价格"""
+        return self._get_ticker_price_field(symbol, "last")
+
     def get_24h_change(self, symbol: str) -> Optional[float]:
         """获取24小时涨跌幅"""
-        ticker_data = self.get_ticker_data(symbol)
-        if isinstance(ticker_data, ReturnTickerDTO):
-            try:
-                current_price = float(ticker_data.last)
-                open_price = float(ticker_data.open24h or current_price)
-                if open_price == 0:
-                    return None
-                return ((current_price - open_price) / open_price) * 100
-            except (ValueError, ZeroDivisionError, TypeError):
-                return None
-        elif ticker_data:
-            try:
-                current_price = float(ticker_data.get("last", 0))  # type: ignore[attr-defined]
-                open_price = float(ticker_data.get("open24h", current_price))  # type: ignore[attr-defined]
-                if open_price == 0:
-                    return None
-                return ((current_price - open_price) / open_price) * 100
-            except (ValueError, ZeroDivisionError, TypeError):
-                return None
-        return None
+        current_price = self.get_current_price(symbol)
+        if current_price is None:
+            return None
+
+        open_price = self._get_ticker_price_field(symbol, "open24h", current_price)
+        if open_price is None or open_price == 0:
+            return None
+
+        try:
+            return ((current_price - open_price) / open_price) * 100
+        except (ValueError, ZeroDivisionError, TypeError):
+            return None
 
     # ==================== 事件发布方法 ====================
     def _is_price_updated(self, symbol: str, new_price_dto: PriceDTO) -> bool:
@@ -285,6 +292,6 @@ class EventDrivenDataManager:
         self.start()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, _exc_type, _exc_val, _exc_tb):
         """退出上下文管理器"""
         self.stop()

@@ -294,7 +294,8 @@ class FloatingWindow:
                         and mouse_location.y < screen_frame.origin.y + screen_frame.size.height
                     ):
                         log_info(
-                            f"自动检测到鼠标在显示器: {screen_frame.size.width}x{screen_frame.size.height} 位置: ({screen_frame.origin.x}, {screen_frame.origin.y})",
+                            f"自动检测到鼠标在显示器: {screen_frame.size.width}x{screen_frame.size.height} "
+                            f"位置: ({screen_frame.origin.x}, {screen_frame.origin.y})",
                             "EVENT_FLOATING_WINDOW",
                         )
                         return screen
@@ -349,7 +350,8 @@ class FloatingWindow:
 
         log_debug(
             f"动态计算窗口高度: {final_height} (启用时间框架: {enabled_tf_count}, 符号数: {symbol_count}, "
-            f"时间区域: {time_height}, 订单区域: {order_height}, 仓位区域: {position_height}, 符号区域: {total_symbols_height}, 边距: {top_margin + bottom_margin})",
+            f"时间区域: {time_height}, 订单区域: {order_height}, 仓位区域: {position_height}, "
+            f"符号区域: {total_symbols_height}, 边距: {top_margin + bottom_margin})",
             "EVENT_FLOATING_WINDOW",
         )
 
@@ -498,41 +500,54 @@ class FloatingWindow:
         else:
             self.show_window()
 
+    def _update_display_component(self, component, component_name: str, visibility: bool | None = None):
+        """
+        更新显示组件的可见性并刷新窗口
+
+        Args:
+            component: 显示组件对象
+            component_name: 组件名称（用于日志）
+            visibility: 可见性状态，None表示切换
+
+        Returns:
+            如果是切换操作，返回新的可见性状态；否则返回None
+        """
+        if component is None:
+            return None if visibility is not None else False
+
+        if visibility is None:
+            # 切换可见性
+            is_visible = component.toggle_visibility()
+            status_text = "切换为"
+            status_value = "显示" if is_visible else "隐藏"
+            return_value = is_visible
+        else:
+            # 设置可见性
+            component.set_visibility(visibility)
+            status_text = "设置为"
+            status_value = "显示" if visibility else "隐藏"
+            return_value = None
+
+        self.adjust_window_size()
+        self._trigger_redraw()
+        log_info(f"{component_name}显示{status_text}: {status_value}", "EVENT_FLOATING_WINDOW")
+        return return_value
+
     def toggle_order_display(self):
         """切换订单状态显示/隐藏"""
-        if hasattr(self, "order_display"):
-            is_visible = self.order_display.toggle_visibility()
-            self.adjust_window_size()
-            self._trigger_redraw()
-            log_info(f"订单状态显示切换为: {'显示' if is_visible else '隐藏'}", "EVENT_FLOATING_WINDOW")
-            return is_visible
-        return False
+        return self._update_display_component(getattr(self, "order_display", None), "订单状态", None)
 
     def set_order_display_visibility(self, visible: bool):
         """设置订单状态显示/隐藏"""
-        if hasattr(self, "order_display"):
-            self.order_display.set_visibility(visible)
-            self.adjust_window_size()
-            self._trigger_redraw()
-            log_info(f"订单状态显示设置为: {'显示' if visible else '隐藏'}", "EVENT_FLOATING_WINDOW")
+        self._update_display_component(getattr(self, "order_display", None), "订单状态", visible)
 
     def toggle_position_display(self):
         """切换仓位状态显示/隐藏"""
-        if hasattr(self, "position_display"):
-            is_visible = self.position_display.toggle_visibility()
-            self.adjust_window_size()
-            self._trigger_redraw()
-            log_info(f"仓位状态显示切换为: {'显示' if is_visible else '隐藏'}", "EVENT_FLOATING_WINDOW")
-            return is_visible
-        return False
+        return self._update_display_component(getattr(self, "position_display", None), "仓位状态", None)
 
     def set_position_display_visibility(self, visible: bool):
         """设置仓位状态显示/隐藏"""
-        if hasattr(self, "position_display"):
-            self.position_display.set_visibility(visible)
-            self.adjust_window_size()
-            self._trigger_redraw()
-            log_info(f"仓位状态显示设置为: {'显示' if visible else '隐藏'}", "EVENT_FLOATING_WINDOW")
+        self._update_display_component(getattr(self, "position_display", None), "仓位状态", visible)
 
     def _on_quick_sell(self, position):
         """

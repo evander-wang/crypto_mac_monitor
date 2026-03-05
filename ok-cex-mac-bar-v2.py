@@ -127,8 +127,76 @@ def parse_arguments():
     return parser.parse_args()
 
 
+def _start_component(component_const, component_class, component_name: str):
+    """
+    启动组件的辅助函数
+
+    Args:
+        component_const: 组件常量
+        component_class: 组件类
+        component_name: 组件名称（用于日志）
+
+    Returns:
+        组件实例或None
+    """
+    try:
+        component = get_mac_bar_component_typed(component_const, component_class)
+        if component:
+            component.start()
+            log_success(f"{component_name}启动成功", "APP")
+            return component
+        else:
+            log_warn(f"{component_name}未找到，跳过启动", "APP")
+    except Exception as e:
+        log_error(f"启动{component_name}失败: {e}", "APP")
+    return None
+
+
+def _stop_component(component_const, component_class, component_name: str):
+    """
+    停止组件的辅助函数
+
+    Args:
+        component_const: 组件常量
+        component_class: 组件类
+        component_name: 组件名称（用于日志）
+    """
+    try:
+        component = get_mac_bar_component_typed(component_const, component_class)
+        if component:
+            component.stop()
+            log_info(f"{component_name}已停止", "APP")
+    except Exception as e:
+        log_error(f"停止{component_name}失败: {e}", "APP")
+
+
+def _setup_alert_loop():
+    """
+    设置告警事件循环
+
+    Returns:
+        (event_loop, thread) 元组
+    """
+    alert_loop = asyncio.new_event_loop()
+
+    def run_alert_loop():
+        asyncio.set_event_loop(alert_loop)
+        alert_loop.run_forever()
+
+    alert_thread = threading.Thread(target=run_alert_loop, daemon=True, name="AlertLoopThread")
+    alert_thread.start()
+
+    # 等待事件循环启动
+    time.sleep(0.1)
+
+    return alert_loop, alert_thread
+
+
 def main():
     """主函数"""
+    alert_loop = None
+    app_services = None
+
     try:
         # 解析命令行参数
         args = parse_arguments()
@@ -140,17 +208,7 @@ def main():
         app = EventDrivenCryptoApp()
 
         # 设置告警线程和事件循环
-        alert_loop = asyncio.new_event_loop()
-
-        def run_alert_loop():
-            asyncio.set_event_loop(alert_loop)
-            alert_loop.run_forever()
-
-        alert_thread = threading.Thread(target=run_alert_loop, daemon=True, name="AlertLoopThread")
-        alert_thread.start()
-
-        # 等待事件循环启动
-        time.sleep(0.1)
+        alert_loop, _ = _setup_alert_loop()
 
         # 初始化事件桥接器
         def ui_timer_func(interval, callback):
@@ -165,31 +223,12 @@ def main():
             raise RuntimeError("生命周期服务未初始化")
         app_services.start_services()
 
-        # 启动订单管理器
-        try:
-            from app.trading.order_manager import OrderManager
+        # 启动交易组件
+        from app.trading.order_manager import OrderManager
+        from app.trading.position_manager import PositionManager
 
-            order_manager = get_mac_bar_component_typed(COMPONENTS_ORDER_MANAGER, OrderManager)
-            if order_manager:
-                order_manager.start()
-                log_success("订单管理器启动成功", "APP")
-            else:
-                log_warn("订单管理器未找到，跳过启动", "APP")
-        except Exception as e:
-            log_error(f"启动订单管理器失败: {e}", "APP")
-
-        # 启动仓位管理器
-        try:
-            from app.trading.position_manager import PositionManager
-
-            position_manager = get_mac_bar_component_typed(COMPONENTS_POSITION_MANAGER, PositionManager)
-            if position_manager:
-                position_manager.start()
-                log_success("仓位管理器启动成功", "APP")
-            else:
-                log_warn("仓位管理器未找到，跳过启动", "APP")
-        except Exception as e:
-            log_error(f"启动仓位管理器失败: {e}", "APP")
+        _start_component(COMPONENTS_ORDER_MANAGER, OrderManager, "订单管理器")
+        _start_component(COMPONENTS_POSITION_MANAGER, PositionManager, "仓位管理器")
 
         # 发布当前线程事件以启用/刷新UI窗口
         get_bridge_manager().publish_cur_thread(EVENT_UI_ENABLE_WINDOW, None)
@@ -204,19 +243,15 @@ def main():
         log_error(f"应用程序发生错误: {e}", "APP")
     finally:
         try:
-            # 停止订单管理器
-            try:
-                from app.trading.order_manager import OrderManager
+            # 停止交易组件
+            from app.trading.order_manager import OrderManager
+            from app.trading.position_manager import PositionManager
 
-                order_manager = get_mac_bar_component_typed(COMPONENTS_ORDER_MANAGER, OrderManager)
-                if order_manager:
-                    order_manager.stop()
-                    log_info("订单管理器已停止", "APP")
-            except Exception as e:
-                log_error(f"停止订单管理器失败: {e}", "APP")
+            _stop_component(COMPONENTS_ORDER_MANAGER, OrderManager, "订单管理器")
+            _stop_component(COMPONENTS_POSITION_MANAGER, PositionManager, "仓位管理器")
 
             # 停止服务（使用依赖注入的生命周期服务）
-            if "app_services" in locals() and app_services is not None:
+            if app_services is not None:
                 app_services.stop_services()
 
                 # 清理容器和所有组件
@@ -227,7 +262,7 @@ def main():
             shutdown_event_bridges()
 
             # 停止告警循环
-            if "alert_loop" in locals():
+            if alert_loop is not None:
                 alert_loop.call_soon_threadsafe(alert_loop.stop)
 
             log_info("应用程序已退出", "APP")
