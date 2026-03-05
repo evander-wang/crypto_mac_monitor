@@ -43,16 +43,16 @@ class AlertThresholdsConfig(BaseConfig):
         def _to_float(val: Any, default: float) -> float:
             try:
                 return float(val)
-            except Exception:
+            except (TypeError, ValueError):
                 return default
 
         def _to_int(val: Any, default: int) -> int:
             try:
                 return int(val)
-            except Exception:
+            except (TypeError, ValueError):
                 try:
                     return int(float(val))
-                except Exception:
+                except (TypeError, ValueError):
                     return default
 
         return cls(
@@ -81,5 +81,5 @@ class AlertThresholdsConfig(BaseConfig):
                 and self.cooldown_sec >= 0
                 and isinstance(self.notification_title_prefix, str)
             )
-        except Exception:
+        except (AttributeError, TypeError):
             return False

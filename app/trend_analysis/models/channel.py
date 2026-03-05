@@ -119,7 +119,7 @@ class ChannelModel(BaseTrendModel):
                 current_bb_upper = float(current_bb_upper_v)
                 current_bb_lower = float(current_bb_lower_v)
                 current_bb_middle = float(current_bb_middle_v)
-            except Exception:
+            except (TypeError, ValueError):
                 return None
 
             # 通道宽度稳定性检查

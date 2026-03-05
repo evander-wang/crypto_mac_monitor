@@ -70,8 +70,8 @@ class EmailChannel(INotificationChannel):
                     self.config.providers.append(EmailProviderConfig(**prov))
                 elif isinstance(prov, EmailProviderConfig):
                     self.config.providers.append(prov)
-            except Exception:
-                # 跳过不合法项
+            except (TypeError, ValueError):
+                # 跳过不合法项（dataclass 初始化参数错误）
                 pass
 
         if not self.config.providers:
@@ -141,7 +141,7 @@ class EmailChannel(INotificationChannel):
                         try:
                             context = ssl.create_default_context()
                             smtp.starttls(context=context)
-                        except Exception as e:
+                        except (smtplib.SMTPException, ssl.SSLError, OSError) as e:
                             log_warn(f"启动 TLS 失败: {e}", "NOTIFICATION_EMAIL")
 
                     # 登录
@@ -157,7 +157,7 @@ class EmailChannel(INotificationChannel):
                         "NOTIFICATION_EMAIL",
                     )
                     return True
-        except Exception as e:
+        except (smtplib.SMTPException, ssl.SSLError, ConnectionError, TimeoutError, OSError) as e:
             log_error(f"Email 发送失败: {e}", "NOTIFICATION_EMAIL")
             return False
 
@@ -236,7 +236,8 @@ class EmailChannel(INotificationChannel):
                             try:
                                 context = ssl.create_default_context()
                                 smtp.starttls(context=context)
-                            except Exception:
+                            except (smtplib.SMTPException, ssl.SSLError, OSError):
+                                # TLS 启动失败，忽略继续测试
                                 pass
                         if provider.username:
                             if not provider.password:
@@ -245,7 +246,7 @@ class EmailChannel(INotificationChannel):
                             smtp.login(provider.username, provider.password)
                 any_success = True
                 log_success(f"Provider[{idx}] 测试连接成功: {provider.smtp_server}", "NOTIFICATION_EMAIL")
-            except Exception as e:
+            except (smtplib.SMTPException, ssl.SSLError, ConnectionError, TimeoutError, OSError) as e:
                 log_warn(f"Provider[{idx}] 测试连接失败: {e}", "NOTIFICATION_EMAIL")
         return any_success
 
@@ -262,14 +263,15 @@ class EmailChannel(INotificationChannel):
                 for prov in config["providers"]:
                     try:
                         self.config.providers.append(EmailProviderConfig(**prov))
-                    except Exception:
+                    except (TypeError, ValueError):
+                        # 跳过无效的 provider 配置
                         pass
 
             # 重新注入环境变量密码
             for idx, provider in enumerate(self.config.providers or [], start=1):
                 env_var = f"BTC_NOTICE_SMTP_PASSWD_{idx}"
                 provider.password = os.getenv(env_var)
-        except Exception as e:
+        except (AttributeError, TypeError, ValueError) as e:
             log_warn(f"更新 Email 配置失败: {e}", "NOTIFICATION_EMAIL")
 
     def _check_rate_limit(self) -> bool:
@@ -281,7 +283,7 @@ class EmailChannel(INotificationChannel):
             self._request_times = [t for t in self._request_times if t > window_start]
             # 是否超过限制
             return len(self._request_times) < self.config.rate_limit_requests
-        except Exception:
+        except (AttributeError, TypeError, OSError):
             # 若出现异常，默认允许，避免阻塞发送
             return True
 
@@ -289,5 +291,6 @@ class EmailChannel(INotificationChannel):
         """记录一次成功发送的时间戳"""
         try:
             self._request_times.append(time.time())
-        except Exception:
+        except (AttributeError, OSError):
+            # 列表追加失败时忽略
             pass

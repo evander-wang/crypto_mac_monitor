@@ -376,5 +376,5 @@ class ThreadMemoryDataCacheManager:
         """析构函数，确保资源被正确释放"""
         try:
             self.cleanup()
-        except Exception:
+        except (AttributeError, RuntimeError, OSError):
             pass  # 析构函数中不应该抛出异常

@@ -81,7 +81,7 @@ class DesktopChannel(INotificationChannel):
                 log_warn("System notification is disabled.", "DESKTOP_CHANNEL")
                 return False
             return True
-        except Exception as e:
+        except (subprocess.CalledProcessError, FileNotFoundError, OSError) as e:
             log_error(f"Failed to send desktop notification: {e}", "DESKTOP_CHANNEL")
             return False
 
@@ -129,7 +129,8 @@ class DesktopChannel(INotificationChannel):
                     subprocess.run(["notify-send", "Test", "Test"], check=True, capture_output=True)
                 return True
             return False
-        except Exception:
+        except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+            # 测试连接失败（命令不存在或执行失败）
             return False
 
     def update_config(self, config: Dict[str, Any]) -> None:
@@ -148,7 +149,7 @@ class DesktopChannel(INotificationChannel):
             self._request_times = [t for t in self._request_times if t > window_start]
             # 判断是否超过限制
             return len(self._request_times) < int(self.config.rate_limit_requests)
-        except Exception:
+        except (AttributeError, TypeError, OSError):
             # 容错：若异常则不阻塞发送
             return True
 
@@ -156,5 +157,6 @@ class DesktopChannel(INotificationChannel):
         """记录一次成功发送的时间戳"""
         try:
             self._request_times.append(time.time())
-        except Exception:
+        except (AttributeError, OSError):
+            # 列表追加失败时忽略
             pass

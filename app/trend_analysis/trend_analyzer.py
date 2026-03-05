@@ -40,7 +40,7 @@ class TrendAnalyzer:
         try:
             cfg_fetch = getattr(self.data_manager, "data_config", None).trend_analyzer_fetch_periods  # type: ignore
             self.fetch_periods: int = max(20, min(500, int(cfg_fetch))) if cfg_fetch else 30
-        except Exception:
+        except (AttributeError, TypeError, ValueError):
             self.fetch_periods: int = 30
         # 实时波动监控配置
         self.realtime_enabled: bool = False
@@ -51,7 +51,7 @@ class TrendAnalyzer:
         tm_cfg = None
         try:
             tm_cfg = getattr(self.data_manager, "data_config", None).trend_models  # type: ignore
-        except Exception:
+        except (AttributeError, TypeError):
             tm_cfg = None
 
         self.models = {
@@ -105,7 +105,8 @@ class TrendAnalyzer:
                     if cfg and name in self.models:
                         # 合并覆盖到模型现有配置
                         self.models[name].config.update(cfg)  # type: ignore
-        except Exception:
+        except (AttributeError, TypeError, ValueError):
+            # 配置更新失败，使用默认配置
             pass
 
         # 获取K线数据

@@ -133,13 +133,13 @@ class NotificationConfig:
                 if key in webhook_data:
                     try:
                         webhook_data[key] = int(webhook_data[key])
-                    except Exception:
+                    except (TypeError, ValueError):
                         pass
             for key in ("timeout", "retry_delay"):
                 if key in webhook_data:
                     try:
                         webhook_data[key] = float(webhook_data[key])
-                    except Exception:
+                    except (TypeError, ValueError):
                         pass
             data["webhook"] = WebhookConfig(**webhook_data)
 
@@ -165,13 +165,13 @@ class NotificationConfig:
             if "notification_timeout" in desktop_data:
                 try:
                     desktop_data["notification_timeout"] = int(desktop_data["notification_timeout"])
-                except Exception:
+                except (TypeError, ValueError):
                     pass
             for key in ("rate_limit_requests", "rate_limit_window"):
                 if key in desktop_data:
                     try:
                         desktop_data[key] = int(desktop_data[key])
-                    except Exception:
+                    except (TypeError, ValueError):
                         pass
             data["desktop"] = DesktopConfig(**desktop_data)
 
@@ -186,7 +186,7 @@ class NotificationConfig:
                 if key in email_data:
                     try:
                         email_data[key] = int(email_data[key])
-                    except Exception:
+                    except (TypeError, ValueError):
                         pass
 
             # 解析 providers 列表
@@ -212,14 +212,14 @@ class NotificationConfig:
                     if "smtp_port" in prov_data:
                         try:
                             prov_data["smtp_port"] = int(prov_data["smtp_port"])
-                        except Exception:
+                        except (TypeError, ValueError):
                             pass
                     # 列表修正
                     if "to_addresses" in prov_data and isinstance(prov_data["to_addresses"], str):
                         prov_data["to_addresses"] = [addr.strip() for addr in prov_data["to_addresses"].split(",") if addr.strip()]
                     try:
                         parsed_providers.append(EmailProviderConfig(**prov_data))
-                    except Exception:
+                    except (TypeError, ValueError):
                         # 忽略非法 provider
                         pass
                 if parsed_providers:
