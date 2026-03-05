@@ -1,0 +1,92 @@
+# Notifications V2 Configuration
+# 通知系统V2配置文件
+
+# 通用设置
+enabled: true
+min_level: "info"  # debug, info, success, warning, error, critical
+max_queue_size: 1000
+queue_timeout: 30.0
+
+# 高级设置
+enable_statistics: true
+enable_health_check: true
+health_check_interval: 300.0  # 5分钟
+enable_events: true
+max_event_callbacks: 10
+
+# 自动重试设置
+auto_retry: true
+max_retry_attempts: 3
+retry_delay: 5.0
+
+# Webhook通知配置
+webhook:
+  enabled: true
+  url: ""  # 需要配置实际的Webhook URL
+  method: "POST"
+  message_format: "dingtalk"  # plain, json, slack, dingtalk, feishu, wechat_work
+  
+  # 认证设置
+  auth_type: "none"  # none, bearer, basic, api_key, custom
+  auth_token: ""
+  auth_username: ""
+  auth_password: ""
+  api_key_value: ""
+  api_key_header: "X-API-Key"
+  
+  # 自定义头部
+  custom_headers: {}
+  
+  # 频率限制
+  rate_limit_requests: 3
+  rate_limit_window: 60  # 1分钟
+  
+  # 连接设置
+  timeout: 30.0
+  retry_count: 3
+  retry_delay: 2.0
+
+# 桌面通知配置
+desktop:
+  enabled: true
+  min_level: "warning"  # 只显示警告及以上级别的桌面通知
+  
+  # 通知设置
+  notification_timeout: 5.0  # 秒
+  use_system_notification: true
+  use_plyer: false
+  app_name: "BTC Trading Bot"
+  app_icon: ""
+  enable_sound: true
+  sound_file: ""
+  
+  # 频率限制
+  rate_limit_requests: 3
+  rate_limit_window: 60  # 1分钟
+
+# 邮件通知配置
+email:
+  enabled: true  # 启用邮件通知
+  # 新版：支持多个邮件服务提供者，按顺序自动切换
+  providers:
+    - smtp_server: "smtp.example.com"
+      smtp_port: 587
+      use_tls: false
+      username: "your-email@example.com"
+      from_address: "your-email@example.com"
+      to_addresses: ["recipient@example.com"]
+      subject_prefix: "[JM Bot] "
+      # 密码通过环境变量设置：BTC_NOTICE_SMTP_PASSWD_1
+    # 可选备用服务示例（按需填写）
+    - smtp_server: "smtp.backup.com"
+      smtp_port: 465
+      use_tls: True
+      username: "your-backup@example.com"
+      from_address: "your-backup@example.com"
+      to_addresses: ["recipient@example.com"]
+      subject_prefix: "[JM Bot] "
+    #   # 对应环境变量：BTC_NOTICE_SMTP_PASSWD_2
+
+  # 通道级频率限制
+  rate_limit_requests: 3
+  rate_limit_window: 60  # 1分钟

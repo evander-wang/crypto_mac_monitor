@@ -1,0 +1,3 @@
+"""
+Alerts module tests package.
+"""

@@ -1,0 +1,22 @@
+[Unit]
+Description=货币监控服务
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/mac_bar
+ExecStart=/opt/mac_bar/btc_venv/bin/python3 /opt/mac_bar/btc_linux_server.py --config /opt/mac_bar/config/linux_config.yaml --notification-config /opt/mac_bar/config/notification_config.yaml --indicator-config /opt/mac_bar/config/indicator_alerts_config.yaml --log-level INFO
+Restart=always
+RestartSec=10
+
+# 日志配置
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=btc-monitor
+
+# 环境变量
+Environment=PYTHONPATH=/opt/mac_bar
+Environment=PYTHONUNBUFFERED=1
+[Install]
+WantedBy=multi-user.target

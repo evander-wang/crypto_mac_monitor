@@ -1,0 +1,60 @@
+[tool.pylsp-mypy]
+overrides = ["--ignore-missing-imports", true]
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.pyright]
+reportMissingImports = false
+reportMissingModuleSource = false
+
+# PyObjC specific ignores
+[[tool.mypy.overrides]]
+module = ["Foundation.*", "AppKit.*", "objc.*"]
+ignore_missing_imports = true
+ignore_errors = true
+
+# Ruff 配置 (替代 black + isort + flake8)
+[tool.ruff]
+line-length = 138
+target-version = "py38"
+
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    "*.egg-info",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+]
+
+ignore = [
+    "E203",  # whitespace before ':' (black 兼容)
+    "E402",  # module level import not at top of file (有意设计，如文档后导入)
+    "E501",  # line too long (由 formatter 处理)
+    "F401",  # imported but unused
+    "F403",  # from . import * (有意使用)
+]
+
+[tool.ruff.format]
+# 使用 Black 兼容的格式化配置
+
+[tool.ruff.lint.isort]
+# Black-compatible import sorting
+from-first = true
+combine-as-imports = true
+lines-after-imports = 2
+
+# Coverage 配置
+[tool.coverage.run]
+source = ["app", "data_manager", "utils"]
+omit = ["*/tests/*", "*/test_*.py", "setup.py"]
