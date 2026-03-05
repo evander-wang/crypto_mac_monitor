@@ -1,3 +1,5 @@
 """Data Implementation - 数据访问实现"""
 
-__all__ = []
+from .repository import KlineRepository
+
+__all__ = ["KlineRepository"]
