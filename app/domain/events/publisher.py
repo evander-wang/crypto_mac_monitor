@@ -1,7 +1,7 @@
 """EventPublisher 接口 - 事件发布者抽象"""
 
 from abc import ABC, abstractmethod
-from typing import Callable, Any
+from typing import Any, Callable
 
 
 class EventPublisher(ABC):

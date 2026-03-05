@@ -9,9 +9,9 @@ from dependency_injector import containers, providers
 
 from app.infrastructure.config import YamlConfigProvider
 from app.infrastructure.factory import (
+    create_application,
     create_data_provider,
     create_event_publisher,
-    create_application,
 )
 
 

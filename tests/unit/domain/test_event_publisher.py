@@ -1,6 +1,7 @@
 """测试 EventPublisher 接口定义"""
 
 import pytest
+
 from app.domain.events.publisher import EventPublisher
 
 

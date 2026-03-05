@@ -1,7 +1,9 @@
 """测试 DataProvider 接口定义"""
 
-import pytest
 from abc import ABC
+
+import pytest
+
 from app.domain.repositories.data_provider import DataProvider
 
 

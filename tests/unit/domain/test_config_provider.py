@@ -1,6 +1,7 @@
 """测试 ConfigProvider 接口定义"""
 
 import pytest
+
 from app.domain.repositories.config_provider import ConfigProvider
 
 

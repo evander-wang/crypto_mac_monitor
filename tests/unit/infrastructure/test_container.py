@@ -1,6 +1,7 @@
 """测试基础设施容器"""
 
 import pytest
+
 from app.infrastructure.container import InfrastructureContainer
 
 

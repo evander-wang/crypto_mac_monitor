@@ -4,8 +4,8 @@ Factory Functions - 命名工厂函数
 使用命名函数替代 lambda，提供清晰的组件创建逻辑。
 """
 
-from app.domain.repositories import DataProvider, ConfigProvider
 from app.domain.events import EventPublisher
+from app.domain.repositories import ConfigProvider, DataProvider
 
 
 def create_data_provider(config_provider: ConfigProvider) -> DataProvider:

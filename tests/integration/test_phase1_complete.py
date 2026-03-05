@@ -1,8 +1,8 @@
 """阶段 1 完成检查 - 验证基础层建立"""
 
-from app.infrastructure.container import InfrastructureContainer
-from app.domain.repositories import DataProvider, ConfigProvider
 from app.domain.events import EventPublisher
+from app.domain.repositories import ConfigProvider, DataProvider
+from app.infrastructure.container import InfrastructureContainer
 
 
 def test_phase1_container_exists():
@@ -29,9 +29,9 @@ def test_phase1_interfaces_defined():
 def test_phase1_factory_functions_exist():
     """验证工厂函数存在"""
     from app.infrastructure.factory import (
+        create_application,
         create_data_provider,
         create_event_publisher,
-        create_application,
     )
 
     assert callable(create_data_provider)
@@ -41,12 +41,13 @@ def test_phase1_factory_functions_exist():
 
 def test_phase1_no_implementation_yet():
     """验证实现尚未完成（按计划）"""
+    import pytest
+
     from app.infrastructure.factory import (
+        create_application,
         create_data_provider,
         create_event_publisher,
-        create_application,
     )
-    import pytest
 
     with pytest.raises(NotImplementedError):
         create_data_provider(None)

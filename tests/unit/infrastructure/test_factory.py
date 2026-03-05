@@ -1,9 +1,9 @@
 """测试工厂函数"""
 
 from app.infrastructure.factory import (
+    create_application,
     create_data_provider,
     create_event_publisher,
-    create_application,
 )
 
 
