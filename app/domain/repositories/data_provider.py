@@ -57,3 +57,13 @@ class DataProvider(ABC):
             True 如果数据可用且足够
         """
         pass
+
+    @abstractmethod
+    def get_supported_symbols(self) -> list:
+        """
+        获取支持的交易对列表
+
+        Returns:
+            交易对符号列表
+        """
+        pass

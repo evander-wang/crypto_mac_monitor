@@ -7,7 +7,7 @@ from utils.logger import log_error
 
 from typing import Dict, List, Optional
 
-from app.data_manager import EventDrivenDataManager
+from app.domain.repositories import DataProvider
 from app.models import ReturnBreakoutDTO, ReturnImpulseDTO, ReturnRealtimeRangeDTO, TrendResult
 from app.utils import log_error, log_warn
 
@@ -26,33 +26,24 @@ class TrendAnalyzer:
 
     def __init__(
         self,
-        data_manager: EventDrivenDataManager,
+        data_provider: DataProvider,
     ):
         """
         初始化趋势分析器
 
         Args:
-            config: 配置参数，可包含各个模型的配置
-            data_manager: 统一数据管理器实例，如果为None则创建新实例
+            data_provider: 数据提供者接口
         """
-        self.data_manager: EventDrivenDataManager = data_manager
-        # 从配置读取fetch_periods，缺省为30以适配20~30窗口
-        try:
-            cfg_fetch = getattr(self.data_manager, "data_config", None).trend_analyzer_fetch_periods  # type: ignore
-            self.fetch_periods: int = max(20, min(500, int(cfg_fetch))) if cfg_fetch else 30
-        except (AttributeError, TypeError, ValueError):
-            self.fetch_periods: int = 30
+        self.data_provider: DataProvider = data_provider
+        # TODO: 从 ConfigProvider 获取 fetch_periods，暂时使用默认值
+        self.fetch_periods: int = 30
         # 实时波动监控配置
         self.realtime_enabled: bool = False
         self.realtime_interval_sec: int = 3
         self.realtime_range_threshold: float = 0.6  # %
 
-        # 初始化各个检测模型（支持配置注入）
+        # TODO: 从 ConfigProvider 获取模型配置，暂时使用 None
         tm_cfg = None
-        try:
-            tm_cfg = getattr(self.data_manager, "data_config", None).trend_models  # type: ignore
-        except (AttributeError, TypeError):
-            tm_cfg = None
 
         self.models = {
             "breakout": BreakoutModel(config=(tm_cfg.get("breakout") if tm_cfg else None)),
@@ -74,14 +65,8 @@ class TrendAnalyzer:
         Returns:
             数据是否准备就绪
         """
-        # 从数据配置中获取最小周期数
-        try:
-            tf_config = self.data_manager.data_config.timeframes[bar]
-            min_periods = tf_config.min_periods
-        except (KeyError, TypeError):
-            min_periods = 50
-
-        return self.data_manager.is_kline_data_ready(symbol, bar, min_periods=min_periods)
+        # 使用 DataProvider 接口的 is_data_ready 方法
+        return self.data_provider.is_data_ready(symbol, bar)
 
     def analyze_trend(self, symbol: str, min_confidence: float = 0.6, bar: str = "5m") -> Optional[TrendResult]:
         """
@@ -97,20 +82,20 @@ class TrendAnalyzer:
         if not self.symbol_data_is_ready(symbol, bar=bar):
             return None
 
-        # 按时间周期应用模型配置覆盖
-        try:
-            if hasattr(self.data_manager, "data_config") and hasattr(self.data_manager.data_config, "get_trend_model_config"):
-                for name in ["breakout", "channel", "consolidation"]:
-                    cfg = self.data_manager.data_config.get_trend_model_config(name, timeframe=bar)  # type: ignore
-                    if cfg and name in self.models:
-                        # 合并覆盖到模型现有配置
-                        self.models[name].config.update(cfg)  # type: ignore
-        except (AttributeError, TypeError, ValueError):
-            # 配置更新失败，使用默认配置
-            pass
+        # TODO: 从 ConfigProvider 获取模型配置覆盖
+        # try:
+        #     if hasattr(self.data_provider, "data_config") and hasattr(self.data_provider.data_config, "get_trend_model_config"):
+        #         for name in ["breakout", "channel", "consolidation"]:
+        #             cfg = self.data_provider.data_config.get_trend_model_config(name, timeframe=bar)  # type: ignore
+        #             if cfg and name in self.models:
+        #                 # 合并覆盖到模型现有配置
+        #                 self.models[name].config.update(cfg)  # type: ignore
+        # except (AttributeError, TypeError, ValueError):
+        #     # 配置更新失败，使用默认配置
+        #     pass
 
         # 获取K线数据
-        df = self.data_manager.get_kline_data(symbol, bar, limit=self.fetch_periods)
+        df = self.data_provider.get_kline_data(symbol, bar, limit=self.fetch_periods)
         if df is None or len(df) < 20:
             log_error(f"{symbol} {bar} 数据不足, 无法分析趋势", "TREND")
             return None
@@ -162,7 +147,7 @@ class TrendAnalyzer:
 
     # 3x5m 冲击检测（基于现有5m数据）
     def detect_5m_impulse(self, symbol: str) -> Optional[ReturnImpulseDTO]:
-        df = self.data_manager.get_kline_data(symbol, "5m", 3)
+        df = self.data_provider.get_kline_data(symbol, "5m", 3)
         if df is None or len(df) < 3:
             log_warn(f"{symbol} 3x5m 冲击 失败, 数据不足", "EXTRAS")
             return None
@@ -177,7 +162,7 @@ class TrendAnalyzer:
 
     # 实现 5m 蜡烛线连续突破检测
     def detect_5m_breakout(self, symbol: str) -> Optional[ReturnBreakoutDTO]:
-        df = self.data_manager.get_kline_data(symbol, "5m", 10)
+        df = self.data_provider.get_kline_data(symbol, "5m", 10)
         if df is None or len(df) < 10:
             log_warn(f"{symbol} 5m 连续突破检测失败, 数据不足", "EXTRAS")
             return None
@@ -244,7 +229,7 @@ class TrendAnalyzer:
 
     # 实时波动（最近5根1m）
     def get_1m_realtime_range(self, symbol: str, limit: int = 5) -> Optional[ReturnRealtimeRangeDTO]:
-        df = self.data_manager.get_kline_data(symbol, "1m", limit=limit)
+        df = self.data_provider.get_kline_data(symbol, "1m", limit=limit)
         if df is None or df.empty:
             log_warn(f"{symbol} 1m 实时波动 失败, 数据不足", "EXTRAS")
             return None
@@ -303,8 +288,8 @@ class TrendAnalyzer:
 
     def is_ready(self, symbol: str, bar: str = "5m") -> bool:
         """检查是否准备好进行分析"""
-        return self.data_manager.is_kline_data_ready(symbol, bar, min_periods=20)
+        return self.data_provider.is_data_ready(symbol, bar)
 
     def get_supported_symbols(self) -> List[str]:
         """获取支持的交易对列表"""
-        return self.data_manager.get_supported_symbols()
+        return self.data_provider.get_supported_symbols()

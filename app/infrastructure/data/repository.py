@@ -83,3 +83,13 @@ class KlineRepository(DataProvider):
             min_periods_value = 50
 
         return self._cache_manager.is_kline_data_ready(symbol, timeframe, min_periods_value)
+
+    def get_supported_symbols(self) -> list:
+        """
+        获取支持的交易对列表
+
+        Returns:
+            交易对符号列表
+        """
+        data_config = self._config_manager.get_data_config()
+        return data_config.symbols
