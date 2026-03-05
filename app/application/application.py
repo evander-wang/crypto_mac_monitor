@@ -67,3 +67,24 @@ class Application:
         if self.analysis:
             return self.analysis.analyze_trend(symbol, timeframe)
         return None
+
+    def get_current_price(self, symbol: str):
+        """
+        获取当前价格 - 门面方法
+
+        Args:
+            symbol: 交易对符号
+
+        Returns:
+            当前价格
+        """
+        return self.data_provider.get_current_price(symbol)
+
+    def get_symbols(self):
+        """
+        获取交易对列表 - 门面方法
+
+        Returns:
+            交易对符号列表
+        """
+        return self.config.get_symbols()
