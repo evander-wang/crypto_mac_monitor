@@ -179,7 +179,7 @@ class RealtimeAnalysis:
             arrow = "↑" if indicators.impulse.direction == "↑" else ("↓" if indicators.impulse.direction == "↓" else "-")
             try:
                 impulse_text = f"⚡X3{arrow} {abs(float(indicators.impulse.pct3)):.1f}%"
-            except Exception:
+            except (TypeError, ValueError, AttributeError):
                 impulse_text = ""
 
         breakout_text = ""
@@ -189,14 +189,14 @@ class RealtimeAnalysis:
                     f"🔥{indicators.breakout.consecutive_count}{indicators.breakout.direction}"
                     f"{abs(float(indicators.breakout.change_pct)):.2f}%"
                 )
-            except Exception:
+            except (TypeError, ValueError, AttributeError):
                 breakout_text = ""
 
         range_text = ""
         if indicators.realtime_range and indicators.realtime_range.range_percent is not None:
             try:
                 range_text = f"R:{float(indicators.realtime_range.range_percent):.1f}%"
-            except Exception:
+            except (TypeError, ValueError, AttributeError):
                 range_text = ""
 
         return Return5mExtrasDTO(
@@ -259,7 +259,8 @@ class RealtimeAnalysis:
                     triggered_sections.append(
                         f"RealTime【1m区间】当前: {range_pct:.1f}% 触发阈值: ≥{float(cfg.realtime_range_pct_min):.1f}%"
                     )
-            except Exception:
+            except (TypeError, ValueError, AttributeError):
+                # 数据格式错误时忽略该项告警
                 pass
 
         # 若无触发条件满足，则不发送
@@ -277,7 +278,7 @@ class RealtimeAnalysis:
             self.notification_manager.send(ctx, title=title)  # type: ignore[attr-defined]
             self._last_alert_ts[symbol] = now_ts
             log_info(f"已发送告警: {symbol} 5m -> {triggered_sections}", "REALTIME")
-        except Exception as e:
+        except (ConnectionError, OSError, AttributeError) as e:
             log_warn(f"告警发送异常: {e}", "REALTIME")
 
     # ==================== 对外接口 ====================
@@ -304,6 +305,7 @@ class RealtimeAnalysis:
         try:
             if getattr(self, "config_manager", None):
                 return self.config_manager.get_alert_thresholds_config()  # type: ignore[attr-defined]
-        except Exception:
+        except (AttributeError, TypeError):
+            # 配置获取失败，使用默认值
             pass
         return AlertThresholdsConfig()

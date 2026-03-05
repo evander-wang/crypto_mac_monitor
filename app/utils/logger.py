@@ -115,7 +115,7 @@ class Logger:
 
             return f"{filename}:{line_number}:{function_name}"
 
-        except Exception:
+        except (AttributeError, ValueError):
             return "unknown:0:unknown"
         finally:
             # 清理frame引用，避免内存泄漏
@@ -129,7 +129,7 @@ class Logger:
         """
         try:
             return threading.get_ident()
-        except Exception:
+        except (AttributeError, RuntimeError):
             return -1
 
     def _format_message(self, level: LogLevel, message: str, prefix: Optional[str] = None, skip_frames: int = 3) -> str:

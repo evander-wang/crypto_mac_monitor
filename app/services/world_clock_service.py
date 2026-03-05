@@ -65,7 +65,7 @@ class WorldClockService:
         if self._timer is not None:
             try:
                 self._timer.stop()
-            except Exception:
+            except (AttributeError, RuntimeError):
                 # 停止失败不影响程序退出
                 pass
             finally:

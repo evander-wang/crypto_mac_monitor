@@ -220,7 +220,7 @@ class FloatingWindow:
             # 只对传入的时间框架进行闪烁处理
             try:
                 updated_tf = getattr(data, "timeframe", None)
-            except Exception:
+            except AttributeError:
                 updated_tf = None
             if updated_tf:
                 self.start_blink(data.symbol, updated_tf)
@@ -832,7 +832,7 @@ class EventDrivenFloatingContentView(NSView):
                                     meta_confidence = float(trend["_meta"].get("confidence", 0.0))
                                     if trend["_meta"].get("periods") is not None:
                                         meta_periods = int(trend["_meta"].get("periods"))
-                                except Exception:
+                                except (TypeError, ValueError, KeyError, AttributeError):
                                     meta_confidence = None
                                 continue
 

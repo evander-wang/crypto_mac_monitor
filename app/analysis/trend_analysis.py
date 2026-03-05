@@ -141,7 +141,7 @@ class TrendAnalysis:
                     }
                 else:
                     trend_info = {"direction": "neutral"}
-            except Exception:
+            except (AttributeError, TypeError, ValueError):
                 trend_info = {"direction": "neutral"}
 
             indicators_map = self.get_trend_indicators(symbol)
@@ -236,7 +236,7 @@ class TrendAnalysis:
                     "periods": (int(getattr(self.trend_analyzer, "fetch_periods", 0)) if hasattr(self, "trend_analyzer") else 0),
                 }
             }
-        except Exception:
+        except (AttributeError, TypeError, ValueError):
             indicators_meta = {"_meta": {"confidence": 0.0, "periods": 0}}
         # 用一个特殊键附加在列表的最后一位
         indicators.append(indicators_meta)

@@ -88,7 +88,7 @@ class BreakoutModel(BaseTrendModel):
                 current_bb_upper = float(current_bb_upper_v)
                 current_bb_lower = float(current_bb_lower_v)
                 float(current_bb_middle_v) if current_bb_middle_v is not None else None
-            except Exception:
+            except (TypeError, ValueError):
                 return None
 
             # 检查最近的突破信号

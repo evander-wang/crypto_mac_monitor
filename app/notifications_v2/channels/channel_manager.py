@@ -7,6 +7,7 @@ from app.notifications_v2.channels.email_channel import EmailChannel
 from app.notifications_v2.channels.notification_channel_interface import INotificationChannel
 from app.notifications_v2.channels.webhook_channel import WebhookChannel
 from app.notifications_v2.config.notification_config import NotificationConfig
+from app.utils import log_warn
 
 
 @dataclass
@@ -36,7 +37,7 @@ class ChannelManager:
     def send(self, channel_name: str, message: str) -> bool:
         channel = self.get_channel(channel_name)
         if not channel:
-            print(f"[CHANNEL_MANAGER] 渠道 '{channel_name}' 未注册或未启用")
+            log_warn(f"渠道 '{channel_name}' 未注册或未启用", "CHANNEL_MANAGER")
             self.statistics.total_failed += 1
             return False
         success = channel.send(message)
@@ -48,7 +49,7 @@ class ChannelManager:
 
     def broadcast(self, message: str) -> Dict[str, bool]:
         if not self.channels:
-            print("[CHANNEL_MANAGER] 没有可用的通知渠道进行广播")
+            log_warn("没有可用的通知渠道进行广播", "CHANNEL_MANAGER")
             return {}
         results = {}
         for name, channel in self.channels.items():

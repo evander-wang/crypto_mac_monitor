@@ -20,11 +20,11 @@ def crypto_symbol_Factory(symbol: str, ticker: Union[ReturnTickerDTO, Dict[str, 
         else:
             try:
                 current = float(t.get("last", 0))
-            except Exception:
+            except (TypeError, ValueError, KeyError, AttributeError):
                 current = 0.0
             try:
                 openp = float(t.get("open24h", current))
-            except Exception:
+            except (TypeError, ValueError, KeyError, AttributeError):
                 openp = current
 
         change_pct = ((current - openp) / openp) * 100 if openp > 0 else 0.0
